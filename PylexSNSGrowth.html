@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pylex SNS Growth Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#111827;background:#f7f8fa}
+input,select,textarea,button{font-family:inherit;font-size:14px}
+a{text-decoration:none}
+
+/* ── AUTH ── */
+.auth-wrap{min-height:100vh;background:#0d1117;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card{background:#111827;border:1px solid #1e2736;border-radius:14px;padding:40px;width:380px;max-width:100%}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo .brand{font-size:20px;font-weight:700;color:#fff}
+.auth-logo .sub{font-size:11px;color:#4a5568;letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+.auth-tabs{display:flex;border-bottom:1px solid #1e2736;margin-bottom:22px}
+.auth-tab{flex:1;padding:9px;text-align:center;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;color:#4a5568}
+.auth-tab.on{color:#4F6EF7;border-color:#4F6EF7}
+.f{margin-bottom:13px}
+.f label{display:block;font-size:12px;color:#4a5568;margin-bottom:4px}
+.f input{width:100%;padding:10px 12px;background:#0d1117;border:1px solid #2d3748;border-radius:7px;color:#fff;outline:none;transition:border .15s}
+.f input:focus{border-color:#4F6EF7}
+.auth-btn{width:100%;padding:11px;background:#4F6EF7;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;margin-top:4px;transition:background .15s}
+.auth-btn:hover{background:#3d5ee0}
+.auth-err{font-size:12px;padding:8px 11px;background:#1a0a0a;color:#fc8181;border:1px solid #7f1d1d;border-radius:6px;margin-bottom:10px;display:none}
+.auth-ok{font-size:12px;padding:8px 11px;background:#0a1a0a;color:#68d391;border:1px solid #14532d;border-radius:6px;margin-bottom:10px;display:none}
+
+/* ── APP LAYOUT ── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.nav{height:52px;background:#0d1117;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #1e2736;position:sticky;top:0;z-index:100;flex-shrink:0}
+.nav-l{display:flex;align-items:center;gap:10px}
+.nav-brand{font-size:15px;font-weight:700;color:#fff;display:flex;align-items:center;gap:7px}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:#4F6EF7}
+.rbadge{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:600}
+.rbadge.admin{background:#162032;color:#63b3ed;border:1px solid #1e3a5f}
+.rbadge.staff{background:#0d2218;color:#68d391;border:1px solid #14532d}
+.nav-r{display:flex;align-items:center;gap:12px}
+.nav-user{font-size:12px;color:#718096}
+.notif-btn{position:relative;cursor:pointer;color:#718096;display:flex;align-items:center;padding:4px}
+.notif-btn svg{width:18px;height:18px}
+.ndot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#EF4444;display:none}
+.lout{font-size:12px;color:#4a5568;cursor:pointer;padding:4px 10px;border:1px solid #2d3748;border-radius:5px;transition:all .15s}
+.lout:hover{color:#fc8181;border-color:#fc8181}
+.body{display:flex;flex:1}
+
+/* ── SIDEBAR ── */
+.sb{width:200px;background:#0d1117;border-right:1px solid #1e2736;padding:12px 8px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}
+.si{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:all .15s;color:#4a5568}
+.si:hover{background:#1e2736;color:#a0aec0}
+.si.on{background:#1a1f40;color:#4F6EF7}
+.si svg{width:16px;height:16px;flex-shrink:0}
+.sdiv{border-top:1px solid #1e2736;margin:6px 4px}
+
+/* ── MAIN ── */
+.main{flex:1;padding:24px;overflow:auto}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.pt{font-size:18px;font-weight:700;color:#111827}
+.ps{font-size:12px;color:#6b7280;margin-top:3px}
+
+/* ── CARDS & GRIDS ── */
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:11px;padding:20px;margin-bottom:15px}
+.ct{font-size:13px;font-weight:700;color:#111827;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:15px}
+.kc{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:15px}
+.kl{font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.kv{font-size:22px;font-weight:700;color:#111827}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+@media(max-width:768px){.two{grid-template-columns:1fr}.sb{width:56px}.si span{display:none}}
+
+/* ── BADGES ── */
+.badge{font-size:10px;padding:2px 8px;border-radius:12px;font-weight:600;display:inline-block}
+.b-blue{background:#EEF2FF;color:#4F6EF7}
+.b-green{background:#F0FDF4;color:#16A34A}
+.b-amber{background:#FFFBEB;color:#D97706}
+.b-red{background:#FEF2F2;color:#EF4444}
+.st-active{background:#F0FDF4;color:#16A34A}
+.st-pause{background:#FFFBEB;color:#D97706}
+.st-end{background:#FEF2F2;color:#EF4444}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:8px 10px;color:#9ca3af;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #e5e7eb}
+.tbl td{padding:10px 10px;border-bottom:1px solid #f0f0f0;color:#374151;vertical-align:middle}
+.tbl tr:hover td{background:#fafafa;cursor:default}
+.tbl tr:last-child td{border-bottom:none}
+
+/* ── FORM ── */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;color:#6b7280;margin-bottom:4px;font-weight:600}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 11px;border:1px solid #d1d5db;border-radius:7px;color:#111827;background:#fff;outline:none;transition:border .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:#4F6EF7}
+.fg textarea{resize:vertical;min-height:80px;line-height:1.6}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.fr{grid-template-columns:1fr}}
+
+/* ── BUTTONS ── */
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{padding:8px 15px;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:7px;cursor:pointer;font-size:13px;transition:all .15s}
+.btn:hover{border-color:#4F6EF7;color:#4F6EF7}
+.btn-p{padding:9px 18px;background:#4F6EF7;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600;transition:background .15s}
+.btn-p:hover{background:#3d5ee0}
+.btn-d{padding:7px 13px;background:#fff;color:#EF4444;border:1px solid #fca5a5;border-radius:7px;cursor:pointer;font-size:12px;transition:all .15s}
+.btn-d:hover{background:#FEF2F2}
+.sel{padding:8px 11px;border:1px solid #e5e7eb;border-radius:7px;background:#fff;color:#111827;cursor:pointer;outline:none}
+
+/* ── MESSAGES ── */
+.smsg{font-size:12px;padding:8px 11px;border-radius:6px;margin-top:10px;display:none}
+.smsg.ok{background:#f0fdf4;color:#16A34A;border:1px solid #bbf7d0}
+.smsg.err{background:#fef2f2;color:#EF4444;border:1px solid #fecaca}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 20px;color:#9ca3af}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty p{font-size:14px;margin-bottom:14px}
+
+/* ── NOTIFICATIONS ── */
+.ni{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #f0f0f0}
+.ni:last-child{border-bottom:none}
+
+/* ── REPORT ── */
+.rp-hdr{background:#0d1117;border-radius:11px;padding:28px;margin-bottom:15px;color:#fff}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto}
+.modal-t{font-size:16px;font-weight:700;margin-bottom:20px;color:#111827}
+
+/* ── AI BOX ── */
+.ai-box{background:#EEF2FF;border:1px solid #c7d2fe;border-radius:9px;padding:15px;margin-bottom:12px}
+.ai-label{font-size:12px;font-weight:700;color:#4F6EF7;margin-bottom:7px}
+
+/* ── IDEA GRID ── */
+.idea-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:9px}
+.idea-item{background:#f8f9fb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;font-size:13px;color:#374151;display:flex;align-items:center;gap:8px}
+
+/* ── API CARD ── */
+.api-card{border:1px solid #e5e7eb;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.api-icon{font-size:22px}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-wrap" class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="brand">Pylex SNS Growth</div>
+      <div class="sub">Social Media Analytics</div>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab on" id="tab-login" onclick="showTab('login')">ログイン</div>
+      <div class="auth-tab" id="tab-reg" onclick="showTab('reg')">新規登録</div>
+    </div>
+    <div class="auth-err" id="auth-err"></div>
+    <div class="auth-ok" id="auth-ok"></div>
+
+    <div id="login-form">
+      <div class="f"><label>メールアドレス</label><input id="l-email" type="email" placeholder="email@example.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="f"><label>パスワード</label><input id="l-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="auth-btn" onclick="doLogin()">ログイン</button>
+    </div>
+
+    <div id="reg-form" style="display:none">
+      <div class="f"><label>名前</label><input id="r-name" placeholder="山田 太郎"></div>
+      <div class="f"><label>メールアドレス</label><input id="r-email" type="email" placeholder="email@example.com"></div>
+      <div class="f"><label>パスワード（6文字以上）</label><input id="r-pass" type="password" placeholder="••••••••"></div>
+      <div class="f"><label>招待コード</label><input id="r-code" placeholder="管理者から受け取ったコードを入力"></div>
+      <button class="auth-btn" onclick="doReg()">アカウントを作成</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-wrap" class="app" style="display:none">
+  <div class="nav">
+    <div class="nav-l">
+      <div class="nav-brand"><div class="nav-dot"></div>Pylex SNS Growth</div>
+      <div class="rbadge" id="role-badge"></div>
+    </div>
+    <div class="nav-r">
+      <div class="notif-btn" onclick="go('notifs')" title="通知">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <div class="ndot" id="ndot"></div>
+      </div>
+      <div class="nav-user" id="nav-user"></div>
+      <div class="lout" onclick="doLogout()">ログアウト</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="sb" id="sidebar"></div>
+    <div class="main" id="main"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-body"></div>
+</div>
+
+<script>
+// ── ICONS (SVG strings) ──
+const ICONS={
+  dashboard:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+  building:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M9 21V5a2 2 0 012-2h2a2 2 0 012 2v16M9 7h6M9 11h6M9 15h6"/></svg>',
+  edit:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  bulb:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1M6.343 6.343l-.707.707M3 12H2M6.343 17.657l-.707-.707M21 12h-1M17.657 6.343l-.707.707M17.657 17.657l-.707-.707M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+  report:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6M3 20h18a1 1 0 001-1V5a1 1 0 00-1-1H3a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>',
+  bell:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>',
+  users:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>',
+  api:'<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>',
+};
+
+// ── CONSTANTS ──
+const MONTHS=['2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'];
+const STLABEL={active:'運用中',pause:'一時停止',end:'契約終了'};
+const IND=['美容室・サロン','飲食店','工務店・建設','不動産','アパレル・EC','ジム・フィットネス','車・バイク','医療・クリニック','教育・スクール','その他'];
+const IDEAS={
+  '美容室・サロン':['Before→Afterカット動画','スタイリスト密着','ヘアケア術3選','季節のカラートレンド','自宅スタイリング術','お客様インタビュー'],
+  '飲食店':['新メニュー調理工程','シェフのこだわり食材','人気ランキング','開店準備の裏側','賄い飯紹介','季節限定メニュー発表'],
+  '工務店・建設':['施工前後のBefore→After','職人の技術密着','現場ドキュメント','タイムラプス動画','よくある施工ミス3選','採用向け職場紹介'],
+  '不動産':['物件紹介ウォークスルー','内見のポイント解説','エリア紹介・周辺環境','リノベーション事例','相場・市況解説','購入体験談'],
+  'アパレル・EC':['新作コーディネート紹介','スタッフ着用ルーポク','素材・こだわり紹介','梱包・発送の裏側','セール告知動画','お客様レビュー紹介'],
+  'ジム・フィットネス':['自宅トレーニング紹介','Before→After体験談','正しいフォームのコツ','よくある筋トレミス3選','トレーナー密着','会員インタビュー'],
+  '車・バイク':['車両紹介インプレッション','納車の流れ','中古車選びの注意点','人気車ランキング','カスタム事例紹介','メンテナンスのコツ'],
+  '医療・クリニック':['先生インタビュー','施術の流れ','よくある質問Q&A','院内紹介ツアー','スタッフ紹介','症例Before→After'],
+  '教育・スクール':['授業風景ダイジェスト','卒業生の声','先生密着','合格体験談','学習方法のコツ','施設紹介ツアー'],
+  'その他':['スタッフ紹介動画','お客様の声','サービス紹介','よくある質問Q&A','代表メッセージ','仕事の裏側'],
+};
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function fm(m){const[y,mo]=m.split('-');return`${y}年${parseInt(mo)}月`}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function n2s(n){return n?Number(n).toLocaleString():'-'}
+
+// ── DB (localStorage) ──
+const ADMIN={id:'admin_001',email:'hiro@pylexgroup.com',password:'pylex2025',role:'admin',name:'HIRO（管理者）',createdAt:'2026-01-01'};
+const DEFAULT_INVITE_CODE='pylex-staff-2026';
+let DB={users:[ADMIN],clients:{},kpi:{},notifs:[]};
+let ME=null, PAGE='dashboard', SEL_C=null, SEL_M='2026-07';
+
+function save(){
+  try{localStorage.setItem('pylex_db',JSON.stringify(DB));}catch(e){}
+}
+function load(){
+  try{
+    const s=localStorage.getItem('pylex_db');
+    if(s){
+      const d=JSON.parse(s);
+      // Merge staff users (keep admin hardcoded)
+      if(d.users)d.users.filter(u=>u.role==='staff').forEach(u=>{if(!DB.users.find(x=>x.id===u.id))DB.users.push(u);});
+      if(d.clients)DB.clients=d.clients;
+      if(d.kpi)DB.kpi=d.kpi;
+      if(d.notifs)DB.notifs=d.notifs;
+    }
+  }catch(e){}
+}
+function loadSession(){
+  try{const id=localStorage.getItem('pylex_ses');if(id){const u=DB.users.find(x=>x.id===id);if(u)return u;}
+  }catch(e){}return null;
+}
+function myClients(){return DB.clients[ME.id]||[]}
+function setMyClients(a){DB.clients[ME.id]=a;save()}
+function getKPI(uid,cid,m){return DB.kpi[`${uid}:${cid}:${m}`]||null}
+function setKPI(uid,cid,m,d){DB.kpi[`${uid}:${cid}:${m}`]=d;save()}
+
+// ── AUTH ──
+function showTab(t){
+  document.getElementById('tab-login').classList.toggle('on',t==='login');
+  document.getElementById('tab-reg').classList.toggle('on',t==='reg');
+  document.getElementById('login-form').style.display=t==='login'?'block':'none';
+  document.getElementById('reg-form').style.display=t==='reg'?'block':'none';
+  clearAuthMsg();
+}
+function clearAuthMsg(){
+  document.getElementById('auth-err').style.display='none';
+  document.getElementById('auth-ok').style.display='none';
+}
+function authErr(m){const e=document.getElementById('auth-err');e.textContent=m;e.style.display='block';document.getElementById('auth-ok').style.display='none';}
+function authOk(m){const e=document.getElementById('auth-ok');e.textContent=m;e.style.display='block';document.getElementById('auth-err').style.display='none';}
+
+function doLogin(){
+  const email=document.getElementById('l-email').value.trim().toLowerCase();
+  const pass=document.getElementById('l-pass').value;
+  if(!email||!pass){authErr('メールアドレスとパスワードを入力してください');return;}
+  const u=DB.users.find(x=>x.email.toLowerCase()===email&&x.password===pass);
+  if(!u){authErr('メールアドレスまたはパスワードが正しくありません');return;}
+  ME=u;
+  try{localStorage.setItem('pylex_ses',u.id);}catch(e){}
+  showApp();
+}
+function doReg(){
+  const name=document.getElementById('r-name').value.trim();
+  const email=document.getElementById('r-email').value.trim().toLowerCase();
+  const pass=document.getElementById('r-pass').value;
+  const code=document.getElementById('r-code').value.trim();
+  if(!name){authErr('名前を入力してください');return;}
+  if(!email||!email.includes('@')){authErr('正しいメールアドレスを入力してください');return;}
+  if(pass.length<6){authErr('パスワードは6文字以上で設定してください');return;}
+  const savedCode=localStorage.getItem('pylex_invite_code')||DEFAULT_INVITE_CODE;
+  if(code!==savedCode){authErr('招待コードが正しくありません。管理者に確認してください。');return;}
+  if(DB.users.find(u=>u.email.toLowerCase()===email)){authErr('このメールアドレスは既に登録されています');return;}
+  DB.users.push({id:uid(),email,password:pass,role:'staff',name,createdAt:new Date().toISOString()});
+  save();
+  authOk('登録完了！ログインしてください。');
+  setTimeout(()=>showTab('login'),1500);
+}
+function doLogout(){
+  ME=null;SEL_C=null;
+  try{localStorage.removeItem('pylex_ses');}catch(e){}
+  document.getElementById('auth-wrap').style.display='flex';
+  document.getElementById('app-wrap').style.display='none';
+  document.getElementById('l-email').value='';
+  document.getElementById('l-pass').value='';
+  clearAuthMsg();
+}
+
+// ── APP INIT ──
+function showApp(){
+  document.getElementById('auth-wrap').style.display='none';
+  document.getElementById('app-wrap').style.display='flex';
+  document.getElementById('nav-user').textContent=ME.name;
+  document.getElementById('role-badge').textContent=ME.role==='admin'?'管理者':'スタッフ';
+  document.getElementById('role-badge').className='rbadge '+(ME.role==='admin'?'admin':'staff');
+  PAGE='dashboard';SEL_C=null;SEL_M='2026-07';
+  render();
+}
+
+// ── ROUTING ──
+function go(p){PAGE=p;render();}
+function render(){
+  renderSB();
+  checkNotifs();
+  const el=document.getElementById('main');
+  el.innerHTML=getPage();
+  // Restore API key if on that page
+  if(PAGE==='apikeys'){
+    try{const k=localStorage.getItem('pylex_api');if(k&&document.getElementById('api-key'))document.getElementById('api-key').value=k;}catch(e){}
+  }
+}
+
+function renderSB(){
+  const isA=ME.role==='admin';
+  const items=[
+    {id:'dashboard',icon:ICONS.dashboard,label:'ダッシュボード'},
+    {id:'clients',icon:ICONS.building,label:'クライアント'},
+    {id:'input',icon:ICONS.edit,label:'データ入力'},
+    {id:'suggest',icon:ICONS.bulb,label:'コンテンツ提案'},
+    {id:'report',icon:ICONS.report,label:'月次レポート'},
+    {id:'notifs',icon:ICONS.bell,label:'通知'},
+    ...(isA?[{divider:true},{id:'admin',icon:ICONS.users,label:'スタッフ管理'}]:[]),
+    {id:'apikeys',icon:ICONS.api,label:'設定'},
+  ];
+  document.getElementById('sidebar').innerHTML=items.map(i=>
+    i.divider?'<div class="sdiv"></div>':
+    `<div class="si ${PAGE===i.id?'on':''}" onclick="go('${i.id}')">${i.icon}<span>${i.label}</span></div>`
+  ).join('');
+}
+
+function checkNotifs(){
+  const u=DB.notifs.filter(n=>n.to===ME.id&&!n.read).length;
+  document.getElementById('ndot').style.display=u?'block':'none';
+}
+
+// ── PAGES ──
+function getPage(){
+  if(PAGE==='dashboard')return pDash();
+  if(PAGE==='clients')return pClients();
+  if(PAGE==='input')return pInput();
+  if(PAGE==='suggest')return pSuggest();
+  if(PAGE==='report')return pReport();
+  if(PAGE==='notifs')return pNotifs();
+  if(PAGE==='admin'&&ME.role==='admin')return pAdmin();
+  if(PAGE==='apikeys')return pAPI();
+  return pDash();
+}
+
+function pDash(){
+  const isA=ME.role==='admin';
+  if(isA){
+    const staff=DB.users.filter(u=>u.role==='staff');
+    const totalC=Object.values(DB.clients).reduce((a,c)=>a+c.length,0);
+    const totalV=Object.values(DB.kpi).reduce((a,d)=>a+(Number(d.views)||0),0);
+    return`<div class="ph"><div><div class="pt">管理者ダッシュボード</div><div class="ps">全スタッフ・全クライアントの統括ビュー</div></div></div>
+    <div class="kg">
+      <div class="kc"><div class="kl">登録スタッフ</div><div class="kv">${staff.length}名</div></div>
+      <div class="kc"><div class="kl">総クライアント</div><div class="kv">${totalC}社</div></div>
+      <div class="kc"><div class="kl">累計再生数</div><div class="kv">${totalV.toLocaleString()}</div></div>
+    </div>
+    <div class="card"><div class="ct">スタッフ一覧</div>
+      ${!staff.length?`<div class="empty"><div class="empty-icon">👥</div><p>まだスタッフが登録されていません</p><p style="font-size:12px;color:#d1d5db">スタッフが新規登録すると自動でここに表示されます</p></div>`:
+      `<table class="tbl"><thead><tr><th>名前</th><th>メール</th><th>担当数</th><th>累計再生数</th><th></th></tr></thead><tbody>
+      ${staff.map(u=>{
+        const cs=DB.clients[u.id]||[];
+        const uv=Object.entries(DB.kpi).filter(([k])=>k.startsWith(u.id+':')).reduce((a,[,d])=>a+(Number(d.views)||0),0);
+        return`<tr><td><strong>${esc(u.name)}</strong></td><td style="color:#6b7280">${esc(u.email)}</td><td>${cs.length}社</td><td>${uv.toLocaleString()}</td>
+        <td><button class="btn" style="font-size:12px;padding:5px 10px" onclick="openStaffDetail('${u.id}')">詳細</button></td></tr>`;
+      }).join('')}
+      </tbody></table>`}
+    </div>`;
+  }
+  const cs=myClients();
+  return`<div class="ph"><div><div class="pt">ダッシュボード</div><div class="ps">担当クライアント：${cs.length}社</div></div>
+    <button class="btn-p" onclick="go('clients')">+ クライアント追加</button></div>
+  ${!cs.length?`<div class="card"><div class="empty"><div class="empty-icon">🏢</div><p>まだクライアントがいません</p><button class="btn-p" onclick="go('clients')">クライアントを追加する</button></div></div>`:
+  `<div class="kg">
+    <div class="kc"><div class="kl">総クライアント</div><div class="kv">${cs.length}社</div></div>
+    <div class="kc"><div class="kl">運用中</div><div class="kv">${cs.filter(c=>c.status==='active').length}社</div></div>
+    <div class="kc"><div class="kl">一時停止</div><div class="kv">${cs.filter(c=>c.status==='pause').length}社</div></div>
+    <div class="kc"><div class="kl">契約終了</div><div class="kv">${cs.filter(c=>c.status==='end').length}社</div></div>
+  </div>
+  <div class="card"><div class="ct">クライアント一覧</div>
+    <table class="tbl"><thead><tr><th>クライアント名</th><th>業種</th><th>ステータス</th><th></th></tr></thead><tbody>
+    ${cs.map(c=>`<tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td style="color:#6b7280">${esc(c.industry||'-')}</td>
+      <td><span class="badge st-${c.status}">${STLABEL[c.status]}</span></td>
+      <td><button class="btn" style="font-size:12px;padding:5px 10px" onclick="SEL_C='${c.id}';go('input')">データ入力</button></td>
+    </tr>`).join('')}
+    </tbody></table>
+  </div>`}`;
+}
+
+function pClients(){
+  const cs=myClients();
+  return`<div class="ph"><div><div class="pt">クライアント管理</div><div class="ps">担当クライアントの追加・編集・削除</div></div>
+    <button class="btn-p" onclick="openClientModal()">+ クライアント追加</button></div>
+  ${!cs.length?`<div class="card"><div class="empty"><div class="empty-icon">🏢</div><p>まだクライアントがいません</p></div></div>`:
+  `<div class="card"><table class="tbl"><thead><tr><th>クライアント名</th><th>業種</th><th>ステータス</th><th>追加日</th><th>操作</th></tr></thead><tbody>
+  ${cs.map(c=>`<tr>
+    <td><strong style="cursor:pointer;color:#4F6EF7" onclick="SEL_C='${c.id}';go('input')">${esc(c.name)}</strong></td>
+    <td style="color:#6b7280;font-size:12px">${esc(c.industry||'-')}</td>
+    <td><span class="badge st-${c.status}">${STLABEL[c.status]}</span></td>
+    <td style="color:#9ca3af;font-size:12px">${c.createdAt?c.createdAt.slice(0,7):'-'}</td>
+    <td><div class="acts">
+      <button class="btn" style="font-size:12px;padding:5px 10px" onclick="openClientModal('${c.id}')">編集</button>
+      <button class="btn-d" onclick="delClient('${c.id}')">削除</button>
+    </div></td>
+  </tr>`).join('')}
+  </tbody></table></div>`}`;
+}
+
+function pInput(){
+  const cs=myClients();
+  if(!cs.length)return`<div class="card"><div class="empty"><div class="empty-icon">🏢</div><p>まずクライアントを追加してください</p><button class="btn-p" onclick="go('clients')">クライアント追加</button></div></div>`;
+  if(!SEL_C)SEL_C=cs[0].id;
+  const sc=cs.find(c=>c.id===SEL_C)||cs[0];
+  if(!SEL_M)SEL_M='2026-07';
+  const d=getKPI(ME.id,sc.id,SEL_M)||{};
+  return`<div class="ph"><div><div class="pt">データ入力</div><div class="ps">KPI数値を入力して保存してください</div></div>
+    <div class="acts">
+      <select class="sel" onchange="SEL_C=this.value;render()">${cs.map(c=>`<option value="${c.id}" ${c.id===sc.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+      <select class="sel" onchange="SEL_M=this.value;render()">${MONTHS.map(m=>`<option value="${m}" ${m===SEL_M?'selected':''}>${fm(m)}</option>`).join('')}</select>
+    </div></div>
+  <div class="card"><div class="ct">${esc(sc.name)}　${fm(SEL_M)}<span class="badge b-blue">手入力</span></div>
+    <div class="fr">
+      <div class="fg"><label>投稿数</label><input id="i-posts" type="number" value="${d.posts||''}" placeholder="例: 8"></div>
+      <div class="fg"><label>総再生数</label><input id="i-views" type="number" value="${d.views||''}" placeholder="例: 124000"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>フォロワー増加数</label><input id="i-fol" type="number" value="${d.follower||''}" placeholder="例: 381"></div>
+      <div class="fg"><label>いいね数</label><input id="i-likes" type="number" value="${d.likes||''}" placeholder="例: 4820"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>コメント数</label><input id="i-com" type="number" value="${d.comments||''}" placeholder="例: 318"></div>
+      <div class="fg"><label>保存数</label><input id="i-saves" type="number" value="${d.saves||''}" placeholder="例: 1240"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>プロフィールアクセス数</label><input id="i-prof" type="number" value="${d.profile||''}" placeholder="例: 2940"></div>
+      <div class="fg"><label>シェア数</label><input id="i-shares" type="number" value="${d.shares||''}" placeholder="例: 560"></div>
+    </div>
+    <div class="fg"><label>メモ・所感・今月の気づき</label><textarea id="i-memo" placeholder="今月の傾向、うまくいった点、改善点など...">${esc(d.memo||'')}</textarea></div>
+    <div class="smsg ok" id="input-ok"></div>
+    <div class="acts">
+      <button class="btn-p" onclick="saveKpi('${sc.id}')">保存する</button>
+      <button class="btn" onclick="exportCSV('${sc.id}','${esc(sc.name)}')">CSVエクスポート</button>
+    </div>
+  </div>`;
+}
+
+function saveKpi(cid){
+  const g=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  setKPI(ME.id,cid,SEL_M,{
+    posts:+g('i-posts')||0,views:+g('i-views')||0,follower:+g('i-fol')||0,
+    likes:+g('i-likes')||0,comments:+g('i-com')||0,saves:+g('i-saves')||0,
+    profile:+g('i-prof')||0,shares:+g('i-shares')||0,memo:g('i-memo'),
+    ts:new Date().toISOString()
+  });
+  const ok=document.getElementById('input-ok');
+  if(ok){ok.textContent='保存しました！';ok.style.display='block';setTimeout(()=>{ok.style.display='none';},2000);}
+}
+
+function exportCSV(cid,cname){
+  const rows=[['月','投稿数','総再生数','フォロワー増加','いいね','コメント','保存','プロフアクセス','シェア','メモ']];
+  MONTHS.forEach(m=>{const d=getKPI(ME.id,cid,m);if(d)rows.push([m,d.posts,d.views,d.follower,d.likes,d.comments,d.saves,d.profile,d.shares,d.memo||'']);});
+  const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=cname+'_SNSレポート.csv';a.click();
+}
+
+function pSuggest(){
+  const cs=myClients();
+  if(!SEL_C&&cs.length)SEL_C=cs[0].id;
+  const sc=SEL_C?cs.find(c=>c.id===SEL_C):null;
+  const d=sc?getKPI(ME.id,sc.id,SEL_M):null;
+  const ideas=sc?IDEAS[sc.industry]||IDEAS['その他']:[];
+  return`<div class="ph"><div><div class="pt">コンテンツ提案</div><div class="ps">業種別おすすめ動画ネタ＋データ分析</div></div>
+    ${cs.length?`<div class="acts">
+      <select class="sel" onchange="SEL_C=this.value;render()">${cs.map(c=>`<option value="${c.id}" ${c.id===(SEL_C||'')?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+      <select class="sel" onchange="SEL_M=this.value;render()">${MONTHS.map(m=>`<option value="${m}" ${m===SEL_M?'selected':''}>${fm(m)}</option>`).join('')}</select>
+    </div>`:''}
+  </div>
+  ${sc?`
+  <div class="card"><div class="ct">${esc(sc.name)}（${esc(sc.industry||'その他')}）のおすすめ動画ネタ</div>
+    <div class="idea-grid">${ideas.map(i=>`<div class="idea-item">💡 ${esc(i)}</div>`).join('')}</div>
+  </div>
+  <div class="card"><div class="ct">今月のデータ分析 <span class="badge b-blue">自動</span></div>
+    ${d&&d.views?`<div class="ai-box">
+      <div class="ai-label">✨ ${fm(SEL_M)}のパフォーマンス分析</div>
+      <p style="font-size:13px;line-height:1.8">
+        ${d.posts}本の投稿で総再生数<strong>${Number(d.views).toLocaleString()}回</strong>、フォロワー<strong>+${Number(d.follower||0).toLocaleString()}人</strong>を達成。
+        ${d.saves&&d.views?`保存率${((d.saves/d.views)*100).toFixed(2)}%。`:''}
+        ${d.likes&&d.views?`いいね率${((d.likes/d.views)*100).toFixed(2)}%。`:''}
+        ${d.profile&&d.views?`プロフィールCTR：${((d.profile/d.views)*100).toFixed(2)}%。`:''}
+        ${d.memo?`<br><br><em style="color:#6b7280">📝 ${esc(d.memo)}</em>`:''}
+      </p>
+    </div>`:`<p style="color:#9ca3af;font-size:13px;padding:12px">データを入力すると自動分析が表示されます</p>`}
+  </div>`:`<div class="card"><div class="empty"><div class="empty-icon">🏢</div><p>クライアントを追加してください</p></div></div>`}`;
+}
+
+function pReport(){
+  const cs=myClients();
+  if(!SEL_C&&cs.length)SEL_C=cs[0].id;
+  const sc=SEL_C?cs.find(c=>c.id===SEL_C):null;
+  const d=sc?getKPI(ME.id,sc.id,SEL_M):null;
+  return`<div class="ph"><div><div class="pt">月次レポート</div><div class="ps">クライアント向けレポートプレビュー</div></div>
+    <div class="acts">
+      ${cs.length?`<select class="sel" onchange="SEL_C=this.value;render()">${cs.map(c=>`<option value="${c.id}" ${c.id===SEL_C?'selected':''}>${esc(c.name)}</option>`).join('')}</select>`:''}
+      <select class="sel" onchange="SEL_M=this.value;render()">${MONTHS.map(m=>`<option value="${m}" ${m===SEL_M?'selected':''}>${fm(m)}</option>`).join('')}</select>
+    </div></div>
+  ${sc&&d&&d.views?`
+  <div class="rp-hdr">
+    <div style="font-size:10px;letter-spacing:.1em;color:#4a5568;margin-bottom:12px;text-transform:uppercase">Pylex Group / SNS Growth Report</div>
+    <div style="font-size:26px;font-weight:700;margin-bottom:4px">${fm(SEL_M)} 運用レポート</div>
+    <div style="font-size:14px;color:#718096">${esc(sc.name)} 様</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px">
+      ${[['総再生数',Number(d.views||0).toLocaleString()+'回'],['フォロワー増加','+'+Number(d.follower||0).toLocaleString()+'人'],['投稿数',(d.posts||0)+'本']].map(([l,v])=>`
+      <div style="background:#1a2236;border-radius:8px;padding:14px">
+        <div style="font-size:10px;color:#4a5568;margin-bottom:4px">${l}</div>
+        <div style="font-size:19px;font-weight:700;color:#fff">${v}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+  <div class="two">
+    <div class="card"><div class="ct">KPI詳細</div>
+      ${[['いいね数',d.likes],['コメント数',d.comments],['保存数',d.saves],['プロフアクセス',d.profile],['シェア数',d.shares]].map(([l,v])=>`
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px">
+        <span style="color:#6b7280">${l}</span><strong>${v?Number(v).toLocaleString():'-'}</strong>
+      </div>`).join('')}
+    </div>
+    <div class="card"><div class="ct">担当者メモ</div>
+      <p style="font-size:13px;line-height:1.8;color:#374151;white-space:pre-wrap">${esc(d.memo||'メモなし')}</p>
+    </div>
+  </div>
+  <div style="text-align:right;margin-top:8px">
+    <button class="btn" onclick="exportCSV('${sc.id}','${esc(sc.name)}')">CSVでダウンロード</button>
+  </div>`:`
+  <div class="card"><div class="empty"><div class="empty-icon">📊</div>
+    <p>${!sc?'クライアントを追加してください':!d||!d.views?'このクライアントのデータがまだ入力されていません':''}</p>
+    ${sc?`<button class="btn-p" onclick="SEL_C='${sc.id}';go('input')">データを入力する</button>`:''}
+  </div></div>`}`;
+}
+
+function pNotifs(){
+  const isA=ME.role==='admin';
+  const mine=isA?[...DB.notifs]:[...DB.notifs.filter(n=>n.to===ME.id)];
+  if(!isA){DB.notifs=DB.notifs.map(n=>n.to===ME.id?{...n,read:true}:n);save();document.getElementById('ndot').style.display='none';}
+  return`<div class="ph"><div><div class="pt">通知</div><div class="ps">${isA?'スタッフへのフィードバック送信・管理':'管理者からのメッセージ'}</div></div>
+    ${isA?`<button class="btn-p" onclick="openNotifModal()">+ メッセージ送信</button>`:''}
+  </div>
+  <div class="card">
+    ${!mine.length?`<div class="empty"><div class="empty-icon">🔔</div><p>通知はありません</p></div>`:''}
+    ${[...mine].reverse().map(n=>{
+      const sender=DB.users.find(u=>u.id===n.from);
+      const target=DB.users.find(u=>u.id===n.to);
+      return`<div class="ni">
+        <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;background:${n.read?'#e5e7eb':'#4F6EF7'}"></div>
+        <div style="flex:1">
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:4px">
+            ${isA?`宛先: ${esc(target?target.name:'?')}`:`from: ${esc(sender?sender.name:'管理者')}`} ・ ${n.ts?n.ts.slice(0,10):''}
+          </div>
+          <div style="font-size:13px;color:#111827;line-height:1.7">${esc(n.msg)}</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function pAdmin(){
+  const staff=DB.users.filter(u=>u.role==='staff');
+  return`<div class="ph"><div><div class="pt">スタッフ管理</div><div class="ps">全スタッフの担当状況・パフォーマンス</div></div></div>
+  <div class="card">
+    ${!staff.length?`<div class="empty"><div class="empty-icon">👥</div><p>まだスタッフが登録されていません</p><p style="font-size:12px;color:#d1d5db;margin-top:4px">スタッフが新規登録するとここに表示されます</p></div>`:
+    `<table class="tbl"><thead><tr><th>名前</th><th>メール</th><th>担当数</th><th>累計再生数</th><th></th></tr></thead><tbody>
+    ${staff.map(u=>{
+      const cs=DB.clients[u.id]||[];
+      const uv=Object.entries(DB.kpi).filter(([k])=>k.startsWith(u.id+':')).reduce((a,[,d])=>a+(Number(d.views)||0),0);
+      return`<tr><td><strong>${esc(u.name)}</strong></td><td style="color:#6b7280">${esc(u.email)}</td><td>${cs.length}社</td><td>${uv.toLocaleString()}</td>
+      <td><button class="btn" style="font-size:12px;padding:5px 10px" onclick="openStaffDetail('${u.id}')">詳細</button></td></tr>`;
+    }).join('')}
+    </tbody></table>`}
+  </div>`;
+}
+
+function pAPI(){
+  const currentCode=localStorage.getItem('pylex_invite_code')||DEFAULT_INVITE_CODE;
+  const isA=ME.role==='admin';
+  return`<div class="ph"><div><div class="pt">設定</div><div class="ps">招待コード・API設定の管理</div></div></div>
+  ${isA?`<div class="card"><div class="ct">🔑 招待コード設定 <span class="badge b-green">管理者専用</span></div>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:15px;line-height:1.8">社員が新規登録するときに必要なコードです。このコードを知っている人だけが登録できます。社員に直接LINEなどで共有してください。</p>
+    <div style="background:#f8f9fb;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:15px;font-size:13px">
+      <div style="color:#6b7280;margin-bottom:4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">現在の招待コード</div>
+      <div style="font-size:18px;font-weight:700;color:#111827;letter-spacing:.05em">${currentCode}</div>
+    </div>
+    <div class="fg"><label>新しい招待コード</label><input id="invite-code" placeholder="例: pylex-staff-2026"></div>
+    <div class="smsg ok" id="invite-ok"></div>
+    <button class="btn-p" style="width:auto" onclick="saveInviteCode()">招待コードを変更する</button>
+  </div>`:''}
+  <div class="card"><div class="ct">SNS API連携 <span class="badge b-amber">準備中</span></div>
+  <div class="card"><div class="ct">SNS API連携 <span class="badge b-amber">準備中</span></div>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:18px;line-height:1.8">Instagram・TikTok・YouTubeのAPIと連携することでKPI数値を自動取得できるようになります。現在は手動入力での運用となります。</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px">
+      ${[['📸','Instagram Graph API'],['🎵','TikTok Business API'],['▶️','YouTube Data API v3']].map(([icon,name])=>`
+      <div class="api-card"><div class="api-icon">${icon}</div><div style="font-size:13px;font-weight:600">${name}</div><span class="badge b-amber">準備中</span></div>`).join('')}
+    </div>
+  </div>
+  <div class="card"><div class="ct">Claude API <span class="badge b-blue">設定可能</span></div>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:15px">APIキーを設定するとAI分析・コンテンツ提案機能が強化されます。</p>
+    <div class="fg"><label>APIキー</label><input id="api-key" type="password" placeholder="sk-ant-..."></div>
+    <div class="smsg ok" id="api-ok"></div>
+    <button class="btn-p" style="width:auto" onclick="saveAPI()">保存</button>
+  </div>`;
+}
+function saveAPI(){
+  const k=document.getElementById('api-key').value;
+  try{localStorage.setItem('pylex_api',k);}catch(e){}
+  const ok=document.getElementById('api-ok');ok.textContent='APIキーを保存しました';ok.style.display='block';
+  setTimeout(()=>ok.style.display='none',2000);
+}
+function saveInviteCode(){
+  const code=document.getElementById('invite-code').value.trim();
+  if(!code){alert('招待コードを入力してください');return;}
+  localStorage.setItem('pylex_invite_code',code);
+  const ok=document.getElementById('invite-ok');ok.textContent='招待コードを変更しました！社員に新しいコードを共有してください。';ok.style.display='block';
+  setTimeout(()=>{ok.style.display='none';render();},2500);
+}
+
+// ── MODALS ──
+function openModal(html){
+  document.getElementById('modal-body').innerHTML=html;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeModal(){document.getElementById('modal-bg').classList.remove('show');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function openClientModal(id){
+  const c=id?myClients().find(x=>x.id===id):null;
+  openModal(`<div class="modal-t">${c?'クライアント編集':'クライアント追加'}</div>
+    <div class="fg"><label>クライアント名 *</label><input id="m-name" value="${esc(c?c.name:'')}"></div>
+    <div class="fg"><label>業種</label><select id="m-ind">${IND.map(i=>`<option ${c&&c.industry===i?'selected':''}>${esc(i)}</option>`).join('')}</select></div>
+    <div class="fg"><label>ステータス</label><select id="m-st">
+      <option value="active" ${!c||c.status==='active'?'selected':''}>運用中</option>
+      <option value="pause" ${c&&c.status==='pause'?'selected':''}>一時停止</option>
+      <option value="end" ${c&&c.status==='end'?'selected':''}>契約終了</option>
+    </select></div>
+    <div class="fg"><label>メモ</label><textarea id="m-memo">${esc(c?c.memo||'':'')}</textarea></div>
+    <div class="smsg err" id="m-err"></div>
+    <div class="acts">
+      <button class="btn-p" style="flex:1" onclick="saveClient('${esc(id||'')}')">${c?'更新':'追加'}</button>
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+    </div>`);
+}
+function saveClient(id){
+  const n=(document.getElementById('m-name')||{value:''}).value.trim();
+  if(!n){const e=document.getElementById('m-err');if(e){e.textContent='クライアント名を入力してください';e.style.display='block';}return;}
+  const cs=myClients();
+  const data={name:n,industry:(document.getElementById('m-ind')||{value:IND[0]}).value,status:(document.getElementById('m-st')||{value:'active'}).value,memo:(document.getElementById('m-memo')||{value:''}).value};
+  if(id){const i=cs.findIndex(c=>c.id===id);if(i>-1)cs[i]={...cs[i],...data};}
+  else cs.push({id:uid(),createdAt:new Date().toISOString(),...data});
+  setMyClients(cs);closeModal();render();
+}
+function delClient(id){
+  if(!confirm('このクライアントを削除しますか？関連するデータも全て削除されます。'))return;
+  setMyClients(myClients().filter(c=>c.id!==id));
+  Object.keys(DB.kpi).filter(k=>k.includes(':'+id+':')).forEach(k=>delete DB.kpi[k]);
+  save();if(SEL_C===id)SEL_C=null;render();
+}
+
+function openNotifModal(){
+  const staff=DB.users.filter(u=>u.role==='staff');
+  openModal(`<div class="modal-t">スタッフへメッセージ送信</div>
+    <div class="fg"><label>送信先</label><select id="n-to">
+      <option value="all">全スタッフ</option>
+      ${staff.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join('')}
+    </select></div>
+    <div class="fg"><label>メッセージ</label><textarea id="n-msg" placeholder="フィードバックや連絡事項を入力..."></textarea></div>
+    <div class="smsg err" id="n-err"></div>
+    <div class="acts">
+      <button class="btn-p" style="flex:1" onclick="sendNotif()">送信</button>
+      <button class="btn" onclick="closeModal()">キャンセル</button>
+    </div>`);
+}
+function sendNotif(){
+  const msg=(document.getElementById('n-msg')||{value:''}).value.trim();
+  if(!msg){const e=document.getElementById('n-err');if(e){e.textContent='メッセージを入力してください';e.style.display='block';}return;}
+  const to=(document.getElementById('n-to')||{value:'all'}).value;
+  const targets=to==='all'?DB.users.filter(u=>u.role==='staff'):[DB.users.find(u=>u.id===to)].filter(Boolean);
+  targets.forEach(u=>DB.notifs.push({id:uid(),from:ME.id,to:u.id,msg,read:false,ts:new Date().toISOString()}));
+  save();closeModal();render();
+}
+
+function openStaffDetail(staffId){
+  const u=DB.users.find(x=>x.id===staffId);
+  const cs=DB.clients[staffId]||[];
+  openModal(`<div class="modal-t">${esc(u?.name)} の担当データ</div>
+    ${!cs.length?`<p style="color:#9ca3af;font-size:13px;padding:12px 0">クライアントがまだいません</p>`:
+    `<table class="tbl"><thead><tr><th>クライアント</th><th>業種</th><th>状態</th><th>累計再生数</th></tr></thead><tbody>
+    ${cs.map(c=>{
+      const tv=MONTHS.reduce((a,m)=>{const d=getKPI(staffId,c.id,m);return a+(d?Number(d.views||0):0);},0);
+      return`<tr><td><strong>${esc(c.name)}</strong></td><td style="color:#6b7280">${esc(c.industry||'-')}</td>
+      <td><span class="badge st-${c.status}">${STLABEL[c.status]}</span></td><td>${tv.toLocaleString()}</td></tr>`;
+    }).join('')}
+    </tbody></table>`}
+    <div style="margin-top:18px"><button class="btn" onclick="closeModal()">閉じる</button></div>`);
+}
+
+// ── BOOT ──
+load();
+const ses=loadSession();
+if(ses){ME=ses;document.getElementById('auth-wrap').style.display='none';showApp();}
+</script>
+</body>
+</html>
